@@ -11,11 +11,13 @@ import (
   "github.com/integrii/flaggy"
 )
 
-var file string
-var disable_resize = true
-var quality = 80
-
-var files []string
+var (
+  file string
+  disable_resize = true
+  quality = 80
+  suffix = "_compressed"
+  files []string
+)
 
 func init() {
   flaggy.SetName("compress")
@@ -25,13 +27,14 @@ func init() {
   flaggy.AddPositionalValue(&file, "file", 1, true, "Image file to compress")
   flaggy.Bool(&disable_resize, "n", "no-resize", "Keep image at original size")
   flaggy.Int(&quality, "q", "quality", "Quality to save image at 0-100")
+  flaggy.String(&suffix, "s", "suffix", "Suffix to be appended to filenames")
   flaggy.Parse()
 }
 
 func getNewFilename(path string) string {
   dir, filename := filepath.Split(path)
   splitname := strings.Split(filename, ".")
-  return dir + splitname[0] + "_compressed.jpg"
+  return dir + splitname[0] + suffix + ".jpg"
 }
 
 func main() {
@@ -77,7 +80,6 @@ func main() {
     }
 
     options := jpeg.Options{Quality: quality}
-    //options.quality = quality
 
     err = jpeg.Encode(writer, image, &options)
     fmt.Println("Success!")
