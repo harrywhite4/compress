@@ -9,11 +9,12 @@ import (
   "path/filepath"
   "strconv"
   "github.com/integrii/flaggy"
+  "github.com/bamiaux/rez"
 )
 
 var (
   file string
-  disable_resize = true
+  disable_resize = false
   quality = 80
   suffix = "_compressed"
   files []string
@@ -37,6 +38,24 @@ func getNewFilename(path string) string {
   return dir + splitname[0] + suffix + ".jpg"
 }
 
+func resizeImage(initImage *image.Image) {
+  curSize := (*initImage).Bounds().Size()
+  // Simple half size for now
+  newWidth := curSize.X / 2
+  fmt.Println(newWidth)
+  newHeight := curSize.Y / 2
+  fmt.Println(newHeight)
+  rect := image.Rect(0, 0, newWidth, newHeight)
+  smallImage := image.NewYCbCr(rect, image.YCbCrSubsampleRatio420)
+  err := rez.Convert(smallImage, *initImage, rez.NewBicubicFilter())
+  if err != nil {
+    fmt.Println("Error resizing")
+    fmt.Println(err)
+  } else {
+    *initImage = smallImage
+  }
+}
+
 func main() {
   fmt.Println(file)
   fmt.Println(strconv.FormatBool(disable_resize))
@@ -56,6 +75,7 @@ func main() {
     files[0] = file
   }
 
+  // Process files
   for _, file := range files {
     comp_file := getNewFilename(file)
     fmt.Println(comp_file)
@@ -64,7 +84,7 @@ func main() {
     if err != nil {
       os.Exit(1)
     }
-    image, format, err := image.Decode(reader)
+    initImage, format, err := image.Decode(reader)
     fmt.Println("Decoded " + format)
     if err != nil {
       os.Exit(1)
@@ -72,6 +92,7 @@ func main() {
 
     if !disable_resize {
       fmt.Println("Resizing")
+      resizeImage(&initImage)
     }
 
     writer, err := os.Create(comp_file)
@@ -81,7 +102,7 @@ func main() {
 
     options := jpeg.Options{Quality: quality}
 
-    err = jpeg.Encode(writer, image, &options)
+    err = jpeg.Encode(writer, initImage, &options)
     fmt.Println("Success!")
   }
   
