@@ -1,14 +1,21 @@
 package main
 
 import (
+  "os"
   "fmt"
+  "strings"
+  "image"
+  "image/jpeg"
+  "path/filepath"
   "strconv"
   "github.com/integrii/flaggy"
 )
 
-var file = "default.img"
+var file string
 var disable_resize = true
 var quality = 80
+
+var files []string
 
 func init() {
   flaggy.SetName("compress")
@@ -21,8 +28,59 @@ func init() {
   flaggy.Parse()
 }
 
+func getNewFilename(path string) string {
+  dir, filename := filepath.Split(path)
+  splitname := strings.Split(filename, ".")
+  return dir + splitname[0] + "_compressed.jpg"
+}
+
 func main() {
-  fmt.Printf(file + "\n")
-  fmt.Printf(strconv.FormatBool(disable_resize) + "\n")
-  fmt.Printf(strconv.Itoa(quality) + "\n")
+  fmt.Println(file)
+  fmt.Println(strconv.FormatBool(disable_resize))
+  fmt.Println(strconv.Itoa(quality))
+
+  info, err := os.Lstat(file)
+  if err != nil {
+    os.Exit(1)
+  }
+  
+  if info.IsDir() {
+    fmt.Println("Passed directory")
+    // Get all files in directory
+    os.Exit(1)
+  } else {
+    files = make([]string, 1)
+    files[0] = file
+  }
+
+  for _, file := range files {
+    comp_file := getNewFilename(file)
+    fmt.Println(comp_file)
+
+    reader, err := os.Open(file)
+    if err != nil {
+      os.Exit(1)
+    }
+    image, format, err := image.Decode(reader)
+    fmt.Println("Decoded " + format)
+    if err != nil {
+      os.Exit(1)
+    }
+
+    if !disable_resize {
+      fmt.Println("Resizing")
+    }
+
+    writer, err := os.Create(comp_file)
+    if err != nil {
+      os.Exit(1)
+    }
+
+    options := jpeg.Options{Quality: quality}
+    //options.quality = quality
+
+    err = jpeg.Encode(writer, image, &options)
+    fmt.Println("Success!")
+  }
+  
 }
