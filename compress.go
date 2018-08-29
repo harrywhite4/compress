@@ -2,6 +2,7 @@ package main
 
 import (
   "os"
+  "io/ioutil"
   "fmt"
   "strings"
   "image"
@@ -68,8 +69,21 @@ func main() {
   
   if info.IsDir() {
     fmt.Println("Passed directory")
+    dir := file
     // Get all files in directory
-    os.Exit(1)
+    fileInfos, err := ioutil.ReadDir(dir)
+    if err != nil {
+      fmt.Println(err)
+      os.Exit(1)
+    }
+
+    files = make([]string, 0, len(fileInfos))
+    for _, info := range fileInfos {
+      if !info.IsDir() {
+        fullPath := filepath.Join(dir, info.Name())
+        files = append(files, fullPath)
+      }
+    }
   } else {
     files = make([]string, 1)
     files[0] = file
