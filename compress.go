@@ -9,8 +9,9 @@ import (
   "image/jpeg"
   "path/filepath"
   "strconv"
+  "math"
   "github.com/integrii/flaggy"
-  "github.com/bamiaux/rez"
+  "github.com/disintegration/imaging"
 )
 
 var (
@@ -42,19 +43,14 @@ func getNewFilename(path string) string {
 func resizeImage(initImage *image.Image) {
   curSize := (*initImage).Bounds().Size()
   // Simple half size for now
-  newWidth := curSize.X / 2
-  fmt.Println(newWidth)
-  newHeight := curSize.Y / 2
-  fmt.Println(newHeight)
-  rect := image.Rect(0, 0, newWidth, newHeight)
-  smallImage := image.NewYCbCr(rect, image.YCbCrSubsampleRatio420)
-  err := rez.Convert(smallImage, *initImage, rez.NewBicubicFilter())
-  if err != nil {
-    fmt.Println("Error resizing")
-    fmt.Println(err)
-  } else {
-    *initImage = smallImage
-  }
+  width := curSize.X
+  height := curSize.Y
+  ratio := float64(height) / float64(width)
+  //fmt.Println(ratio)
+  pixcount := 2082240.0
+  newWidth := math.Sqrt(pixcount/ratio)
+  newHeight := newWidth*ratio
+  *initImage = imaging.Resize(*initImage, int(newWidth), int(newHeight), imaging.MitchellNetravali)
 }
 
 func main() {
