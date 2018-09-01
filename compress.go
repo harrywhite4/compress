@@ -24,6 +24,7 @@ var (
   targetPixels = 2073600
   files []string
   verbose = false
+  allowedExtensions = [3]string{".jpg", ".jpeg", ".png"}
 )
 
 func init() {
@@ -31,7 +32,7 @@ func init() {
   flaggy.SetDescription("Compress your images")
   flaggy.SetVersion("0.1")
 
-  flaggy.AddPositionalValue(&file, "file", 1, true, "Image file or folder of files to compress")
+  flaggy.AddPositionalValue(&file, "file", 1, true, "Image file to compress, if passed a directory all images in the directory will be processed")
   flaggy.Bool(&disableResize, "n", "no-resize", "Keep image at original size")
   flaggy.Bool(&halfResize, "2", "half", "Save image at half it's original size")
   flaggy.Int(&quality, "q", "quality", "Quality to save image at 0-100")
@@ -118,8 +119,29 @@ func getFiles(file string) []string {
   return files
 }
 
+func checkFileExtension(file string) bool {
+  extension := filepath.Ext(file)
+  allowed :=  false
+  for _, allowedExt := range allowedExtensions {
+    if extension == allowedExt {
+      allowed = true
+      break
+    }
+  }
+  return allowed
+}
+
 func processFile(file string) bool {
   fmt.Printf("Processing %v\n", file)
+
+  allowed := checkFileExtension(file)
+
+  if !allowed {
+    if verbose {
+      fmt.Printf("Skipping %v not valid file extension\n", file)
+    }
+    return true
+  }
   comp_file := getNewFilename(file)
 
   reader, err := os.Open(file)
@@ -164,8 +186,8 @@ func main() {
 
   // Process files
   for _, file := range files {
-    saved := processFile(file)
-    if !saved {
+    errored := processFile(file)
+    if !errored {
       fmt.Printf("%v could not be processed\n", file)
     }
   }
