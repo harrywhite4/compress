@@ -21,6 +21,7 @@ var (
   suffix = "_compressed"
   targetPixels = 2073600
   files []string
+  verbose = false
 )
 
 func init() {
@@ -28,12 +29,13 @@ func init() {
   flaggy.SetDescription("Compress your images")
   flaggy.SetVersion("0.1")
 
-  flaggy.AddPositionalValue(&file, "file", 1, true, "Image file to compress")
+  flaggy.AddPositionalValue(&file, "file", 1, true, "Image file or folder of files to compress")
   flaggy.Bool(&disableResize, "n", "no-resize", "Keep image at original size")
   flaggy.Bool(&halfResize, "2", "half", "Save image at half it's original size")
   flaggy.Int(&quality, "q", "quality", "Quality to save image at 0-100")
   flaggy.Int(&targetPixels, "p", "pixels", "Target pixel count for resized image")
   flaggy.String(&suffix, "s", "suffix", "Suffix to be appended to filenames")
+  flaggy.Bool(&verbose, "v", "verbose", "Print additional information during processing")
   flaggy.Parse()
 }
 
@@ -44,22 +46,45 @@ func getNewFilename(path string) string {
 }
 
 func resizeImage(initImage *image.Image) {
+  performResize := false
   curSize := (*initImage).Bounds().Size()
   width := curSize.X
   height := curSize.Y
   currentPixels := width*height
+  var newWidth, newHeight int
 
-  if currentPixels > targetPixels {
+  if verbose {
+    fmt.Println("Resizing...")
+  }
+
+  if halfResize {
+    // If resizing by half
+    newHeight = height / 2
+    newWidth = width / 2
+    performResize = true
+  } else if currentPixels > targetPixels {
+    // If not resizing by half and above target pixels
     ratio := float64(height) / float64(width)
-    fmt.Printf("Ratio: %v\n", ratio)
-    newWidth := math.Sqrt(float64(targetPixels)/ratio)
-    newHeight := newWidth*ratio
-    fmt.Printf("Width: %v Height: %v\n", int(newWidth), int(newHeight))
-    *initImage = imaging.Resize(*initImage, int(newWidth), int(newHeight), imaging.MitchellNetravali)
+    if verbose {
+      fmt.Printf("Ratio: %v\n", ratio)
+    }
+    newWidth = int(math.Sqrt(float64(targetPixels)/ratio))
+    newHeight = int(float64(newWidth)*ratio)
+    performResize = true
+  }
+
+  if performResize {
+    if verbose {
+      fmt.Printf("Width: %v Height: %v\n", newWidth, newHeight)
+    }
+    *initImage = imaging.Resize(*initImage, newWidth, newHeight, imaging.MitchellNetravali)
+  } else if verbose {
+    fmt.Println("No resize required")
   }
 }
 
 func getFiles(file string) []string {
+  var files []string
   info, err := os.Lstat(file)
   if err != nil {
     fmt.Printf("Could not inspect %v\n", file)
@@ -92,8 +117,8 @@ func getFiles(file string) []string {
 }
 
 func processFile(file string) {
+  fmt.Printf("Processing %v\n", file)
   comp_file := getNewFilename(file)
-  fmt.Println(comp_file)
 
   reader, err := os.Open(file)
   if err != nil {
@@ -102,14 +127,14 @@ func processFile(file string) {
   }
 
   initImage, format, err := image.Decode(reader)
-  fmt.Println("Decoded " + format)
   if err != nil {
     fmt.Println(err)
     os.Exit(1)
+  } else if verbose {
+    fmt.Println("Decoded " + format)
   }
 
   if !disableResize {
-    fmt.Println("Resizing...")
     resizeImage(&initImage)
   }
 
@@ -122,7 +147,12 @@ func processFile(file string) {
   options := jpeg.Options{Quality: quality}
 
   err = jpeg.Encode(writer, initImage, &options)
-  fmt.Println("Success!")
+  if err != nil {
+    fmt.Println(err)
+    os.Exit(1)
+  } else if verbose {
+    fmt.Printf("Saved %v with %v%% quality\n", comp_file, quality)
+  }
 }
 
 func main() {
@@ -133,5 +163,7 @@ func main() {
   for _, file := range files {
     processFile(file)
   }
+
+  fmt.Println("Done!")
   
 }
