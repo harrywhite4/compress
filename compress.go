@@ -12,6 +12,8 @@ import (
   "github.com/integrii/flaggy"
   "github.com/disintegration/imaging"
 )
+// Import png for initialisation
+import _ "image/png"
 
 var (
   file string
@@ -116,20 +118,20 @@ func getFiles(file string) []string {
   return files
 }
 
-func processFile(file string) {
+func processFile(file string) bool {
   fmt.Printf("Processing %v\n", file)
   comp_file := getNewFilename(file)
 
   reader, err := os.Open(file)
   if err != nil {
     fmt.Println(err)
-    os.Exit(1)
+    return false
   }
 
   initImage, format, err := image.Decode(reader)
   if err != nil {
     fmt.Println(err)
-    os.Exit(1)
+    return false
   } else if verbose {
     fmt.Println("Decoded " + format)
   }
@@ -141,7 +143,7 @@ func processFile(file string) {
   writer, err := os.Create(comp_file)
   if err != nil {
     fmt.Println(err)
-    os.Exit(1)
+    return false
   }
 
   options := jpeg.Options{Quality: quality}
@@ -149,10 +151,11 @@ func processFile(file string) {
   err = jpeg.Encode(writer, initImage, &options)
   if err != nil {
     fmt.Println(err)
-    os.Exit(1)
+    return false
   } else if verbose {
     fmt.Printf("Saved %v with %v%% quality\n", comp_file, quality)
   }
+  return true
 }
 
 func main() {
@@ -161,7 +164,10 @@ func main() {
 
   // Process files
   for _, file := range files {
-    processFile(file)
+    saved := processFile(file)
+    if !saved {
+      fmt.Printf("%v could not be processed\n", file)
+    }
   }
 
   fmt.Println("Done!")
