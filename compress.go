@@ -46,10 +46,11 @@ func resizeImage(initImage *image.Image) {
   width := curSize.X
   height := curSize.Y
   ratio := float64(height) / float64(width)
-  //fmt.Println(ratio)
-  pixcount := 2082240.0
+  fmt.Printf("Ratio: %v\n", ratio)
+  pixcount := 2073600.0
   newWidth := math.Sqrt(pixcount/ratio)
   newHeight := newWidth*ratio
+  fmt.Printf("Width: %v Height: %v\n", int(newWidth), int(newHeight))
   *initImage = imaging.Resize(*initImage, int(newWidth), int(newHeight), imaging.MitchellNetravali)
 }
 
