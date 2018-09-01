@@ -131,7 +131,7 @@ func checkFileExtension(file string) bool {
   return allowed
 }
 
-func processFile(file string) bool {
+func processFile(file string) error {
   fmt.Printf("Processing %v\n", file)
 
   allowed := checkFileExtension(file)
@@ -140,20 +140,18 @@ func processFile(file string) bool {
     if verbose {
       fmt.Printf("Skipping %v not valid file extension\n", file)
     }
-    return true
+    return nil
   }
   comp_file := getNewFilename(file)
 
   reader, err := os.Open(file)
   if err != nil {
-    fmt.Println(err)
-    return false
+    return err
   }
 
   initImage, format, err := image.Decode(reader)
   if err != nil {
-    fmt.Println(err)
-    return false
+    return err
   } else if verbose {
     fmt.Println("Decoded " + format)
   }
@@ -164,20 +162,18 @@ func processFile(file string) bool {
 
   writer, err := os.Create(comp_file)
   if err != nil {
-    fmt.Println(err)
-    return false
+    return err
   }
 
   options := jpeg.Options{Quality: quality}
 
   err = jpeg.Encode(writer, initImage, &options)
   if err != nil {
-    fmt.Println(err)
-    return false
+    return err
   } else if verbose {
     fmt.Printf("Saved %v with %v%% quality\n", comp_file, quality)
   }
-  return true
+  return nil
 }
 
 func main() {
@@ -186,9 +182,9 @@ func main() {
 
   // Process files
   for _, file := range files {
-    errored := processFile(file)
-    if !errored {
-      fmt.Printf("%v could not be processed\n", file)
+    err := processFile(file)
+    if err != nil {
+      fmt.Printf("%v failed with error %v\n", file, err)
     }
   }
 
