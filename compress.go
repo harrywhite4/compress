@@ -83,35 +83,35 @@ func resizeImage(initImage *image.Image) {
   }
 }
 
-func getFiles(file string) []string {
+// Given a list of files or directories return files + files in directories
+func getFiles(items []string) []string {
   var files []string
-  info, err := os.Lstat(file)
-  if err != nil {
-    fmt.Printf("Could not inspect %v\n", file)
-    fmt.Println(err)
-    os.Exit(1)
-  }
-  
-  if info.IsDir() {
-    fmt.Printf("Processing files in directory %v\n", file)
-    dir := file
-    // Get all files in directory
-    fileInfos, err := ioutil.ReadDir(dir)
+  for _, file := range items {
+    info, err := os.Lstat(file)
     if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
+      fmt.Printf("Could not inspect %v\n", file)
+      continue
     }
-
-    files = make([]string, 0, len(fileInfos))
-    for _, info := range fileInfos {
-      if !info.IsDir() {
-        fullPath := filepath.Join(dir, info.Name())
-        files = append(files, fullPath)
+    
+    if info.IsDir() {
+      fmt.Printf("Processing files in directory %v\n", file)
+      dir := file
+      // Get all files in directory
+      fileInfos, err := ioutil.ReadDir(dir)
+      if err != nil {
+        fmt.Println(err)
+        continue
       }
+
+      for _, info := range fileInfos {
+        if !info.IsDir() {
+          fullPath := filepath.Join(dir, info.Name())
+          files = append(files, fullPath)
+        }
+      }
+    } else {
+      files = append(files, file)
     }
-  } else {
-    files = make([]string, 1)
-    files[0] = file
   }
   return files
 }
@@ -179,11 +179,8 @@ func main() {
   if len(positionals) == 0 {
     fmt.Println("No file specified")
     os.Exit(1)
-  } else {
-    file = positionals[0]
-  }
-
-  files := getFiles(file)
+  } 
+  files := getFiles(positionals)
 
   // Process files
   for _, file := range files {
