@@ -16,11 +16,13 @@ Path can be an image file or a directory.
 If it is a direcotory, all images within that directory will be processed
 
 ### Options
-  -2, --half            Save image at half it's original size
-  -h, --help            Display help
-  -n, --no-resize       Keep image at original size
-  -p, --pixels int      Target pixel count for resized image (default 2073600)
-  -q, --quality int     Quality to save image at 0-100 (default 80)
-  -s, --suffix string   Suffix to be appended to filenames (default "_compressed")
-  -v, --verbose         Print additional information during processing
+Short flag | Long flag | Description
+--- | --- | ---
+-2 | --half | Save image at half it's original size
+-h | --help | Display help
+-n | --no-resize | Keep image at original size
+-p | --pixels |Target pixel count for resized image (default 2073600)
+-q | --quality | Quality to save image at 0-100 (default 80)
+-s | --suffix | Suffix to be appended to filenames (default "_compressed")
+-v | --verbose | Print additional information during processing
 
