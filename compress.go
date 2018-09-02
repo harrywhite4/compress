@@ -19,6 +19,7 @@ var (
   file string
   disableResize bool
   halfResize bool
+  help bool
   quality int
   suffix = "_compressed"
   targetPixels int
@@ -26,6 +27,8 @@ var (
   verbose = false
   allowedExtensions = [3]string{".jpg", ".jpeg", ".png"}
   flagSet *pflag.FlagSet
+  programText = "Compress - Compress your images"
+  version = 0.1
 )
 
 func init() {
@@ -33,6 +36,7 @@ func init() {
 
   flagSet.BoolVarP(&disableResize, "no-resize", "n", false, "Keep image at original size")
   flagSet.BoolVarP(&halfResize, "half", "2", false, "Save image at half it's original size")
+  flagSet.BoolVarP(&help, "help", "h", false, "Display help")
   flagSet.IntVarP(&quality, "quality", "q", 80, "Quality to save image at 0-100")
   flagSet.IntVarP(&targetPixels, "pixels", "p", 2073600, "Target pixel count for resized image")
   flagSet.StringVarP(&suffix, "suffix", "s", "_compressed", "Suffix to be appended to filenames")
@@ -87,7 +91,7 @@ func resizeImage(initImage *image.Image) {
 func getFiles(items []string) []string {
   var files []string
   for _, file := range items {
-    info, err := os.Lstat(file)
+    info, err := os.Stat(file)
     if err != nil {
       fmt.Printf("Could not inspect %v\n", file)
       continue
@@ -106,11 +110,19 @@ func getFiles(items []string) []string {
       for _, info := range fileInfos {
         if !info.IsDir() {
           fullPath := filepath.Join(dir, info.Name())
-          files = append(files, fullPath)
+          allowed := checkFileExtension(fullPath)
+          if allowed {
+            files = append(files, fullPath)
+          }
         }
       }
     } else {
-      files = append(files, file)
+      allowed := checkFileExtension(file)
+      if allowed {
+        files = append(files, file)
+      } else {
+        fmt.Printf("Ignoring %v invalid file extension\n", file)
+      }
     }
   }
   return files
@@ -173,11 +185,24 @@ func processFile(file string) error {
   return nil
 }
 
+func printHelp() {
+  usage := "compress path1 path2 ... [options]"
+  fmt.Printf("%v\nVersion: %v\n\nUsage:\n  %v\n\nOptions:\n", programText, version, usage)
+  flagSet.PrintDefaults()
+}
+
 func main() {
   flagSet.Parse(os.Args[1:])
+
+  if help {
+    printHelp()
+    os.Exit(1)
+  }
+
   positionals := flagSet.Args()
   if len(positionals) == 0 {
-    fmt.Println("No file specified")
+    fmt.Println("No path specified")
+    fmt.Println("run compress -h for usage")
     os.Exit(1)
   } 
   files := getFiles(positionals)
