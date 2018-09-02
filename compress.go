@@ -9,7 +9,7 @@ import (
   "image/jpeg"
   "path/filepath"
   "math"
-  "github.com/integrii/flaggy"
+  "github.com/spf13/pflag"
   "github.com/disintegration/imaging"
 )
 // Import png for initialisation
@@ -17,29 +17,26 @@ import _ "image/png"
 
 var (
   file string
-  disableResize = false
-  halfResize = false
-  quality = 80
+  disableResize bool
+  halfResize bool
+  quality int
   suffix = "_compressed"
-  targetPixels = 2073600
+  targetPixels int
   files []string
   verbose = false
   allowedExtensions = [3]string{".jpg", ".jpeg", ".png"}
+  flagSet *pflag.FlagSet
 )
 
 func init() {
-  flaggy.SetName("compress")
-  flaggy.SetDescription("Compress your images")
-  flaggy.SetVersion("0.1")
+  flagSet = pflag.NewFlagSet("compress", pflag.ExitOnError) 
 
-  flaggy.AddPositionalValue(&file, "file", 1, true, "Image file to compress, if passed a directory all images in the directory will be processed")
-  flaggy.Bool(&disableResize, "n", "no-resize", "Keep image at original size")
-  flaggy.Bool(&halfResize, "2", "half", "Save image at half it's original size")
-  flaggy.Int(&quality, "q", "quality", "Quality to save image at 0-100")
-  flaggy.Int(&targetPixels, "p", "pixels", "Target pixel count for resized image")
-  flaggy.String(&suffix, "s", "suffix", "Suffix to be appended to filenames")
-  flaggy.Bool(&verbose, "v", "verbose", "Print additional information during processing")
-  flaggy.Parse()
+  flagSet.BoolVarP(&disableResize, "no-resize", "n", false, "Keep image at original size")
+  flagSet.BoolVarP(&halfResize, "half", "2", false, "Save image at half it's original size")
+  flagSet.IntVarP(&quality, "quality", "q", 80, "Quality to save image at 0-100")
+  flagSet.IntVarP(&targetPixels, "pixels", "p", 2073600, "Target pixel count for resized image")
+  flagSet.StringVarP(&suffix, "suffix", "s", "_compressed", "Suffix to be appended to filenames")
+  flagSet.BoolVarP(&verbose, "verbose", "v", false, "Print additional information during processing")
 }
 
 func getNewFilename(path string) string {
@@ -177,6 +174,14 @@ func processFile(file string) error {
 }
 
 func main() {
+  flagSet.Parse(os.Args[1:])
+  positionals := flagSet.Args()
+  if len(positionals) == 0 {
+    fmt.Println("No file specified")
+    os.Exit(1)
+  } else {
+    file = positionals[0]
+  }
 
   files := getFiles(file)
 
