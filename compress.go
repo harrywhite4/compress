@@ -186,8 +186,10 @@ func processFile(file string) error {
 }
 
 func printHelp() {
-  usage := "compress path1 path2 ... [options]"
-  fmt.Printf("%v\nVersion: %v\n\nUsage:\n  %v\n\nOptions:\n", programText, version, usage)
+  usage := "compress path1 path2 ... [options]\n"
+  usageDescription := `Path can be an image file or a directory
+  If it is a direcotory, all images within that directory will be processed`
+  fmt.Printf("%v\nVersion: %v\n\nUsage:\n  %v\n  %v\n\nOptions:\n", programText, version, usage, usageDescription)
   flagSet.PrintDefaults()
 }
 
