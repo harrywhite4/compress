@@ -185,6 +185,20 @@ func processFile(file string) error {
   return nil
 }
 
+func validateArgs() bool {
+  if quality < 0 || quality > 100 {
+    fmt.Println("Quality must be between 0 and 100")
+    return false
+  }
+  
+  if targetPixels < 0 {
+    fmt.Println("Target pixels can not be negative")
+    return false
+  }
+
+  return true
+}
+
 func printHelp() {
   usage := "compress path1 path2 ... [options]\n"
   usageDescription := `Path can be an image file or a directory
@@ -198,6 +212,11 @@ func main() {
 
   if help {
     printHelp()
+    os.Exit(1)
+  }
+
+  valid := validateArgs()
+  if !valid {
     os.Exit(1)
   }
 
