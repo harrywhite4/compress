@@ -28,7 +28,7 @@ var (
   allowedExtensions = [3]string{".jpg", ".jpeg", ".png"}
   flagSet *pflag.FlagSet
   programText = "Compress - Compress your images"
-  version = 0.1
+  version = "1.0.0"
 )
 
 func init() {
