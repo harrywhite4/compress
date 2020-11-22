@@ -18,8 +18,9 @@ import (
 import _ "image/png"
 
 const (
-	programText string = "Compress - Compress your images"
-	version     string = "1.0.1"
+	programName        string = "compress"
+	programDescription string = "Compress your images"
+	programVersion     string = "1.0.1"
 )
 
 var (
@@ -29,7 +30,6 @@ var (
 type arguments struct {
 	disableResize bool
 	halfResize    bool
-	help          bool
 	quality       int
 	suffix        string
 	targetPixels  int
@@ -190,11 +190,18 @@ func validateArgs(args *arguments) error {
 }
 
 func printHelp(flagSet *pflag.FlagSet) {
-	usage := "compress path1 path2 ... [options]\n"
-	usageDescription := `Path can be an image file or a directory
-  If it is a direcotory, all images within that directory will be processed`
-	fmt.Printf("%v\nVersion: %v\n\nUsage:\n  %v\n  %v\n\nOptions:\n", programText, version, usage, usageDescription)
-	flagSet.PrintDefaults()
+	usage := `Usage: %v [OPTION]... [PATH]...
+
+%v
+
+Path can be an image file or a directory.
+If it is a directory, all images within that directory will be processed.
+
+Options:
+%v
+`
+	options := flagSet.FlagUsages()
+	fmt.Printf(usage, programName, programDescription, options)
 }
 
 // Parse command line arguments
@@ -203,19 +210,25 @@ func parseArgs() *arguments {
 	flagSet := pflag.NewFlagSet("compress", pflag.ExitOnError)
 	flagSet.BoolVarP(&args.disableResize, "no-resize", "n", false, "Keep image at original size")
 	flagSet.BoolVarP(&args.halfResize, "half", "2", false, "Save image at half it's original size")
-	flagSet.BoolVarP(&args.help, "help", "h", false, "Display help")
 	flagSet.IntVarP(&args.quality, "quality", "q", 80, "Quality to save image at 0-100")
 	flagSet.IntVarP(&args.targetPixels, "pixels", "p", 2073600, "Target pixel count for resized image")
 	flagSet.StringVarP(&args.suffix, "suffix", "s", "_compressed", "Suffix to be appended to filenames")
 	flagSet.BoolVarP(&args.verbose, "verbose", "v", false, "Print additional information during processing")
+	help := flagSet.BoolP("help", "h", false, "Display help")
+	version := flagSet.Bool("version", false, "Show version")
 
 	flagSet.Parse(os.Args[1:])
-	// Handle help before any further processing
-	if args.help {
+	// Handle help and version before any further processing
+	if *help {
 		printHelp(flagSet)
 		os.Exit(1)
 	}
+	if *version {
+		fmt.Printf("%v %v\n", programName, programVersion)
+		os.Exit(1)
+	}
 
+	// Process positional arguments
 	positionals := flagSet.Args()
 	if len(positionals) == 0 {
 		fmt.Println("No path specified")
