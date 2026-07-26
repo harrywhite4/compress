@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"flag"
 	"github.com/disintegration/imaging"
-	"github.com/spf13/pflag"
 	"image"
 	"image/jpeg"
 	"io/ioutil"
@@ -190,8 +190,25 @@ func validateArgs(args *arguments) error {
 	return nil
 }
 
-func printHelp(flagSet *pflag.FlagSet) {
-	usage := `Usage: %v [OPTION]... [PATH]...
+func parseArgs() *arguments {
+	args := new(arguments)
+	flagSet := flag.NewFlagSet(programName, flag.ExitOnError)
+
+	flagSet.BoolVar(&args.disableResize, "no-resize", false, "Keep image at original size")
+	flagSet.BoolVar(&args.halfResize, "half", false, "Save image at half its original size")
+	flagSet.IntVar(&args.quality, "quality", 80, "Quality to save image at 0-100")
+	flagSet.IntVar(&args.targetPixels, "pixels", 2073600, "Target pixel count for resized image")
+	flagSet.StringVar(&args.suffix, "suffix", "_compressed", "Suffix to be appended to filenames")
+	flagSet.BoolVar(&args.verbose, "verbose", false, "Print additional information during processing")
+	
+	var help bool
+	flagSet.BoolVar(&help, "help", false, "Display help")
+	
+	var version bool
+	flagSet.BoolVar(&version, "version", false, "Show version")
+
+	flagSet.Usage = func() {
+	    usage := `Usage: %v [OPTION]... [PATH]...
 
 %v
 
@@ -199,33 +216,19 @@ Path can be an image file or a directory.
 If it is a directory, all images within that directory will be processed.
 
 Options:
-%v
 `
-	options := flagSet.FlagUsages()
-	fmt.Printf(usage, programName, programDescription, options)
-}
-
-// Parse command line arguments
-func parseArgs() *arguments {
-	args := new(arguments)
-	// TODO: Switch to flag
-	flagSet := pflag.NewFlagSet("compress", pflag.ExitOnError)
-	flagSet.BoolVarP(&args.disableResize, "no-resize", "n", false, "Keep image at original size")
-	flagSet.BoolVarP(&args.halfResize, "half", "2", false, "Save image at half it's original size")
-	flagSet.IntVarP(&args.quality, "quality", "q", 80, "Quality to save image at 0-100")
-	flagSet.IntVarP(&args.targetPixels, "pixels", "p", 2073600, "Target pixel count for resized image")
-	flagSet.StringVarP(&args.suffix, "suffix", "s", "_compressed", "Suffix to be appended to filenames")
-	flagSet.BoolVarP(&args.verbose, "verbose", "v", false, "Print additional information during processing")
-	help := flagSet.BoolP("help", "h", false, "Display help")
-	version := flagSet.Bool("version", false, "Show version")
+		fmt.Fprintf(flagSet.Output(), usage, programName, programDescription)
+		flagSet.PrintDefaults()
+	}
 
 	flagSet.Parse(os.Args[1:])
+
 	// Handle help and version before any further processing
-	if *help {
-		printHelp(flagSet)
+	if help {
+		flagSet.Usage()
 		os.Exit(0)
 	}
-	if *version {
+	if version {
 		fmt.Printf("%v %v\n", programName, programVersion)
 		os.Exit(0)
 	}
@@ -237,6 +240,7 @@ func parseArgs() *arguments {
 		fmt.Println("Run compress --help for usage")
 		os.Exit(1)
 	}
+	
 	args.files = getFiles(positionals)
 	return args
 }
