@@ -1,2 +1,5 @@
 # Ignore binary
 /compress
+# Test images
+/*.png
+/*.jpg

@@ -43,9 +43,9 @@ func getNewFilename(path string, suffix string) string {
 	return dir + splitname[0] + suffix + ".jpg"
 }
 
-func resizeImage(initImage *image.Image, args *arguments) {
+func resizeImage(img image.Image, args *arguments) image.Image {
 	performResize := false
-	curSize := (*initImage).Bounds().Size()
+	curSize := img.Bounds().Size()
 	width := curSize.X
 	height := curSize.Y
 	currentPixels := width * height
@@ -75,10 +75,11 @@ func resizeImage(initImage *image.Image, args *arguments) {
 		if args.verbose {
 			fmt.Printf("Width: %v Height: %v\n", newWidth, newHeight)
 		}
-		*initImage = imaging.Resize(*initImage, newWidth, newHeight, imaging.MitchellNetravali)
+		return imaging.Resize(img, newWidth, newHeight, imaging.MitchellNetravali)
 	} else if args.verbose {
 		fmt.Println("No resize required")
 	}
+	return img
 }
 
 func checkFileExtension(file string) bool {
@@ -109,7 +110,7 @@ func processFile(file string, args *arguments) error {
 		return err
 	}
 
-	initImage, format, err := image.Decode(reader)
+	img, format, err := image.Decode(reader)
 	if err != nil {
 		return err
 	} else if args.verbose {
@@ -117,7 +118,7 @@ func processFile(file string, args *arguments) error {
 	}
 
 	if !args.disableResize {
-		resizeImage(&initImage, args)
+		img = resizeImage(img, args)
 	}
 
 	writer, err := os.Create(comp_file)
@@ -127,7 +128,7 @@ func processFile(file string, args *arguments) error {
 
 	options := jpeg.Options{Quality: args.quality}
 
-	err = jpeg.Encode(writer, initImage, &options)
+	err = jpeg.Encode(writer, img, &options)
 	if err != nil {
 		return err
 	} else if args.verbose {
@@ -207,6 +208,7 @@ Options:
 // Parse command line arguments
 func parseArgs() *arguments {
 	args := new(arguments)
+	// TODO: Switch to flag
 	flagSet := pflag.NewFlagSet("compress", pflag.ExitOnError)
 	flagSet.BoolVarP(&args.disableResize, "no-resize", "n", false, "Keep image at original size")
 	flagSet.BoolVarP(&args.halfResize, "half", "2", false, "Save image at half it's original size")
@@ -221,11 +223,11 @@ func parseArgs() *arguments {
 	// Handle help and version before any further processing
 	if *help {
 		printHelp(flagSet)
-		os.Exit(1)
+		os.Exit(0)
 	}
 	if *version {
 		fmt.Printf("%v %v\n", programName, programVersion)
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// Process positional arguments
@@ -240,10 +242,11 @@ func parseArgs() *arguments {
 }
 
 func main() {
+	// TODO: CLI lirary split with testing
 	args := parseArgs()
 	err := validateArgs(args)
 	if err != nil {
-		fmt.Printf("%v\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 
@@ -251,7 +254,8 @@ func main() {
 	for _, file := range args.files {
 		err := processFile(file, args)
 		if err != nil {
-			fmt.Printf("%v failed with error %v\n", file, err)
+			// TODO: Distinguish error types, hard fail
+			fmt.Fprintf(os.Stderr, "%v failed with error %v\n", file, err)
 		}
 	}
 
